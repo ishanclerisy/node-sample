@@ -1,0 +1,110 @@
+html
+  head
+    title!= title
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(rel='stylesheet', href='css/bootstrap.min.css')
+    link(rel='stylesheet', href='css/resetPassword.css')
+    script(src='js/jquery.min.js')
+    script(src='js/jquery.validate.min.js')
+  body
+    .modal-body
+      .login-form
+        #response.error-bar
+        .loginlogoleft
+          .loginlogo
+            img(src='images/logo.png', alt='')
+          .login-heading
+            | Change Password
+          form#passwordResetForm
+            .form-group
+              label(for='usrname')
+                | New Password
+              input#password1.form-control(type='password', name='password', autocomplete='off', required='')
+              strong(onclick='check()')
+                img(src='images/eye.svg', alt='')
+              //- span#perror.authError Please enter your username
+            .form-group
+              label(for='psw')
+                | Confirm Password
+              input#password2.form-control(type='password', name='confirmPassword', autocomplete='off', required='')
+              input(id='token',type='hidden',value=token, name='token')
+              //- span#cperror.authError Please enter your username
+            button.btn.btn-success.btn-block(type='submit')
+              | Change Password
+    script.
+      $('.error-bar').hide();
+      $('#passwordResetForm').validate({
+      debug: false,
+      errorClass: "authError",
+      errorElement: "span",
+      rules: {
+      password: {
+      required: true
+      },
+      confirmPassword: {
+      required: true,
+      equalTo : '[name="password"]'
+      }
+      },
+      messages: {
+      password: {
+      required: 'Password cannot be blank.'
+      },
+      confirmPassword: {
+      required: 'Confirm password cannot be blank.',
+      equalTo: 'Password does not match the confirm password.'
+      }
+      },
+      highlight: function(element, errorClass) {
+      $(element).removeClass(errorClass);
+      },
+      submitHandler: function(form, e) {
+      $('#response').hide();
+      e.preventDefault();
+      let formObj = {}
+      let inputs = $('#passwordResetForm').serializeArray();
+      $.each(inputs, function(i, input) {
+        formObj[input.name] = input.value;
+      });
+      $.ajax({
+      type: 'POST',
+      url: '/auth/resetPassword',
+      dataType: "json",
+      data: formObj,
+      success: function(result) {
+      $('#response').show();
+      $('#response').addClass('success-msg');
+      $('#response').html(result.msg)
+      },
+      error: function(error) {
+      $('#response').show();
+      $('#response').removeClass('success-msg');
+      if (error.responseJSON.error.message) {
+      $('#response').html(error.responseJSON.error.message)
+      } else if (Object.keys(error.responseJSON.error).length) {
+      if (error.responseJSON.error.length === 2) {
+      $('#response').html('Password and confirm password cannot be blank.')
+      } else {
+      $.each(error.responseJSON.error, function(i, x) {
+      if (x.param === 'password') {
+      $('#response').html('Password cannot be blank.')
+      } else if (x.param === 'confirmPassword') {
+      $('#response').html('Confirm password cannot be blank.')
+      }else if (x.param === 'token') {
+      $('#response').html('Invalid request. Token not found.')
+      }
+      });
+      }
+      }
+      }
+      });
+      }
+      });
+      function check(){
+      var x = document.getElementById('password1');
+      if (x.type === 'password') {
+      x.type = 'text';
+      } else {
+      x.type = 'password';
+      }
+      }
